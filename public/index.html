@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Result Analysis</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Student Result Analysis</h1>
+    <form id="search-form">
+      <label for="search-name">Search by Name:</label>
+      <input type="text" id="search-name" name="searchName" placeholder="Enter a name" required>
+      <button type="submit">Search</button>
+    </form>
+    <div id="search-results"></div>
+    <form id="result-form">
+      <label for="roll-number">Enter Roll Number:</label>
+      <input type="text" id="roll-number" name="rollNumber" placeholder="e.g. 2K21/BT/04" required>
+      <button type="submit">Get Result</button>
+    </form>
+    <div id="result-container">
+      <p>Please enter a roll number to view the result.</p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
