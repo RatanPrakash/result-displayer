@@ -1,12 +1,13 @@
 const searchForm = document.getElementById('search-form');
+const compareForm = document.getElementById('compare-form');
 const searchResultsContainer = document.getElementById('search-results');
-const resultForm = document.getElementById('result-form');
-const resultContainer = document.getElementById('result-container');
+const comparisonContainer = document.getElementById('comparison-container');
 const loadingMessage = '<p>Loading...</p>';
 
+// Function to search for students by name
 searchForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const searchName = document.getElementById('search-name').value;
+  const searchName = document.getElementById('search-name').value.trim().toLowerCase(); // Trim and convert to lowercase for case-insensitive search
 
   try {
     const response = await fetch('/search', {
@@ -30,67 +31,186 @@ searchForm.addEventListener('submit', async (e) => {
   }
 });
 
-function displaySearchResults(students) {
-  const resultsList = document.createElement('ul');
-
-  students.forEach((student) => {
-    const listItem = document.createElement('li');
-    listItem.textContent = `${student.Name} (${student['Roll No.']})`;
-    listItem.addEventListener('click', () => {
-      fetchAndDisplayResult(student['Roll No.']);
-    });
-    resultsList.appendChild(listItem);
-  });
-
-  searchResultsContainer.innerHTML = '';
-  searchResultsContainer.appendChild(resultsList);
-}
-
-async function fetchAndDisplayResult(rollNumber) {
-  resultContainer.innerHTML = loadingMessage;
+// Function to compare students
+compareForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const compareNames = document.getElementById('compare-names').value.trim().toLowerCase(); // Trim and convert to lowercase for case-insensitive search
+  const namesArray = compareNames.split(',').map(name => name.trim()); // Split names and trim whitespace
 
   try {
-    const response = await fetch('/result', {
+    const response = await fetch('/compare', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ rollNumber })
+      body: JSON.stringify({ names: namesArray })
     });
 
     if (response.ok) {
-      const result = await response.json();
-      displayResult(result);
+      const comparisonData = await response.json();
+      displayComparison(comparisonData);
     } else {
       const error = await response.json();
       displayError(error.error);
     }
   } catch (error) {
-    displayError('An error occurred while fetching the result.');
+    displayError('An error occurred while comparing students.');
     console.error('Error:', error);
   }
-}
+});
 
-function displayResult(result) {
-  if (result.error) {
-    displayError(result.error);
+// Function to display search results
+function displaySearchResults(students) {
+  const resultsList = document.createElement('ul');
+
+  students.forEach((student) => {
+    const listItem = document.createElement('li');
+    listItem.textContent = `${student.Name} (${student['Roll_No']})`;
+    listItem.addEventListener('click', () => {
+      displayStudentData(student); // Display student data when clicked
+    });
+    resultsList.appendChild(listItem);
+  });
+
+  searchResultsContainer.innerHTML = '';
+  if (students.length > 0) {
+    searchResultsContainer.appendChild(resultsList);
   } else {
-    const resultHTML = `
-      <h2>Result for Roll Number: ${result.rollNumber}</h2>
-      <p>Name: ${result.name}</p>
-      <p>SGPA: ${result.sgpa}</p>
-    `;
-    resultContainer.innerHTML = resultHTML;
+    searchResultsContainer.innerHTML = '<p>No matching names found.</p>';
   }
 }
 
-function displayError(message) {
-  resultContainer.innerHTML = `<p>${message}</p>`;
-  searchResultsContainer.innerHTML = '';
+// Function to display comparison data
+function displayComparison(comparisonData) {
+  comparisonContainer.innerHTML = '';
+
+  comparisonData.forEach((studentData) => {
+    const studentDiv = document.createElement('div');
+    studentDiv.classList.add('student-comparison');
+
+    const heading = document.createElement('h3');
+    heading.textContent = `${studentData.name} (${studentData.rollNo})`;
+    studentDiv.appendChild(heading);
+
+    const semesterData = document.createElement('div');
+    semesterData.classList.add('semester-data');
+
+    for (const semester in studentData.semesters) {
+      const semesterDiv = document.createElement('div');
+      semesterDiv.innerHTML = `<h4>${semester}</h4>`;
+      
+      const semesterInfo = studentData.semesters[semester];
+      for (const key in semesterInfo) {
+        const p = document.createElement('p');
+        p.textContent = `${key}: ${semesterInfo[key]}`;
+        semesterDiv.appendChild(p);
+      }
+
+      semesterData.appendChild(semesterDiv);
+    }
+
+    studentDiv.appendChild(semesterData);
+    comparisonContainer.appendChild(studentDiv);
+  });
 }
 
-resultForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const rollNumber = document.getElementById('roll-number').value;
-  fetchAndDisplayResult(rollNumber);
+function displayStudentData(student) {
+  const studentDiv = document.createElement('div');
+  studentDiv.classList.add('student-data');
+
+  const heading = document.createElement('h3');
+  heading.textContent = `${student.Name} (${student['Roll_No']})`;
+
+  const removeButton = document.createElement('button');
+  removeButton.textContent = 'Remove';
+  removeButton.addEventListener('click', () => {
+    studentDiv.remove(); // Remove the student's data when the remove button is clicked
+  });
+
+  studentDiv.appendChild(heading);
+  studentDiv.appendChild(removeButton);
+
+  const semesterData = document.createElement('div');
+  semesterData.classList.add('semester-data');
+
+  for (const semester in student) {
+    if (semester.startsWith('SEM_')) {
+      const p = document.createElement('p');
+      p.textContent = `${semester}: ${student[semester]}`;
+      semesterData.appendChild(p);
+    }
+  }
+
+  studentDiv.appendChild(semesterData);
+  comparisonContainer.appendChild(studentDiv);
+}
+
+const chartCanvas = document.getElementById('chart');
+const chartContext = chartCanvas.getContext('2d');
+
+let chartData = {
+  labels: [],
+  datasets: []
+};
+
+function updateChart() {
+  new Chart(chartContext, {
+    type: 'line',
+    data: chartData,
+    options: {
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+}
+
+function addStudentToChart(student) {
+  const studentColor = `#${Math.floor(Math.random() * 16777215).toString(16)}`; // Generate a random color for each student
+
+  const studentData = Object.values(student.semesters);
+
+  chartData.labels = Object.keys(student.semesters); // Update labels if needed
+
+  chartData.datasets.push({
+    label: `${student.Name} (${student['Roll_No']})`,
+    data: studentData,
+    borderColor: studentColor,
+    backgroundColor: studentColor,
+    tension: 0.1
+  });
+
+  updateChart();
+}
+
+// function displayStudentData(student) {
+  
+
+//   // Display student data as before
+// }
+
+function removeStudentFromChart(student) {
+  const studentIndex = chartData.datasets.findIndex(dataset => dataset.label === `${student.Name} (${student['Roll_No']})`);
+  if (studentIndex !== -1) {
+    chartData.datasets.splice(studentIndex, 1);
+    updateChart();
+  }
+}
+
+
+
+
+function displayError(message) {
+  searchResultsContainer.innerHTML = `<p>${message}</p>`;
+  comparisonContainer.innerHTML = '';
+}
+
+const clearAllButton = document.getElementById('clear-all');
+
+clearAllButton.addEventListener('click', () => {
+  comparisonContainer.innerHTML = ''; // Clear all students from the comparison container
 });
+
+

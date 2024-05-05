@@ -121,3 +121,25 @@ button[type="submit"]:hover {
 #search-results li:hover {
   background-color: #e9e9e9;
 }
+#student-data {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between; /* Align students side by side */
+}
+
+#student-data div {
+  width: calc(50% - 20px); /* Each student takes up half the width with a gap of 20px */
+  margin-bottom: 20px; /* Add a margin at the bottom for spacing */
+}
+
+/* Media query to adjust layout for smaller screens */
+@media (max-width: 768px) {
+  #student-data div {
+    width: calc(100% - 20px); /* Each student takes up full width with a gap of 20px */
+  }
+}
+
+
+#visualizations {
+  margin-top: 20px;
+}

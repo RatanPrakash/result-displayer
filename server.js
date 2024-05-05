@@ -2,7 +2,6 @@ const express = require('express');
 const app = express();
 const port = 3000;
 const fs = require('fs');
-const csv = require('csv-parser');
 
 // Serve static files from the 'public' directory
 app.use(express.static('public'));
@@ -10,48 +9,58 @@ app.use(express.static('public'));
 // Parse JSON request body
 app.use(express.json());
 
-// Read student data from the CSV file
-const studentData = [];
-fs.createReadStream('result.csv')
-  .pipe(csv())
-  .on('data', (row) => {
-    studentData.push(row);
-  })
-  .on('end', () => {
-    console.log('Student data loaded from CSV');
+// Read student data from the JSON file
+const data = JSON.parse(fs.readFileSync('data.json', 'utf-8'));
+
+// Route to search for a student by name
+app.post('/search', (req, res) => {
+  const searchName = req.body.searchName.toLowerCase();
+
+  const matchingStudents = Object.values(data).filter(student => {
+    return student.Name.toLowerCase().includes(searchName);
   });
 
-// Route to handle the result analysis
-app.post('/result', (req, res) => {
-  const rollNumber = req.body.rollNumber;
-  const student = studentData.find((s) => s['Roll No.'] === rollNumber);
+  res.json(matchingStudents);
+});
 
-  if (student) {
-    const result = {
-      name: student.Name,
-      rollNumber: student['Roll No.'],
-      sgpa: parseFloat(student.SGPA)
-    };
-    res.json(result);
-  } else {
-    res.status(404).json({ error: 'Student not found' });
-  }
+// Route to compare multiple students
+app.post('/compare', (req, res) => {
+  const names = req.body.names;
+  const comparisonData = [];
+
+  names.forEach(name => {
+    const student = Object.values(data).find(student => student.Name.toLowerCase() === name);
+    if (student) {
+      const studentData = {
+        name: student.Name,
+        rollNo: student['Roll_No'],
+        semesters: {
+          'Semester I': { SGPA: student.SEM_I },
+          'Semester II': { SGPA: student.SEM_II },
+          'Semester III': { SGPA: student.SEM_III },
+          'Semester IV': { SGPA: student.SEM_IV },
+          'Semester V': { SGPA: student.SEM_V }
+        }
+      };
+      comparisonData.push(studentData);
+    }
+  });
+
+  res.json(comparisonData);
 });
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
 
-// Route to handle searching for students by name
-app.post('/search', (req, res) => {
-  const searchName = req.body.searchName.toLowerCase();
-  const matchingStudents = studentData.filter((student) =>
-    student.Name.toLowerCase().includes(searchName)
-  );
-
-  if (matchingStudents.length > 0) {
-    res.json(matchingStudents);
+// Assuming you already have the express app set up
+app.post('/result', (req, res) => {
+  const rollNumber = req.body.rollNumber;
+  // Retrieve the student data based on the roll number
+  const student = data[rollNumber];
+  if (student) {
+    res.json(student);
   } else {
-    res.status(404).json({ error: 'No students found with the given name.' });
+    res.status(404).json({ error: 'Student not found' });
   }
 });
