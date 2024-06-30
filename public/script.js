@@ -98,7 +98,7 @@ function displayComparison(comparisonData) {
     for (const semester in studentData.semesters) {
       const semesterDiv = document.createElement('div');
       semesterDiv.innerHTML = `<h4>${semester}</h4>`;
-      
+
       const semesterInfo = studentData.semesters[semester];
       for (const key in semesterInfo) {
         const p = document.createElement('p');
@@ -117,6 +117,7 @@ function displayComparison(comparisonData) {
 function displayStudentData(student) {
   const studentDiv = document.createElement('div');
   studentDiv.classList.add('student-data');
+  // addStudentToChart(student);
 
   const heading = document.createElement('h3');
   heading.textContent = `${student.Name} (${student['Roll_No']})`;
@@ -170,13 +171,13 @@ function updateChart() {
 function addStudentToChart(student) {
   const studentColor = `#${Math.floor(Math.random() * 16777215).toString(16)}`; // Generate a random color for each student
 
-  const studentData = Object.values(student.semesters);
+  const semesterGpaData = Object.values(student.semesters).map(semester => semester.gpa); // Extract GPA values
 
   chartData.labels = Object.keys(student.semesters); // Update labels if needed
 
   chartData.datasets.push({
     label: `${student.Name} (${student['Roll_No']})`,
-    data: studentData,
+    data: semesterGpaData,
     borderColor: studentColor,
     backgroundColor: studentColor,
     tension: 0.1
@@ -185,12 +186,6 @@ function addStudentToChart(student) {
   updateChart();
 }
 
-// function displayStudentData(student) {
-  
-
-//   // Display student data as before
-// }
-
 function removeStudentFromChart(student) {
   const studentIndex = chartData.datasets.findIndex(dataset => dataset.label === `${student.Name} (${student['Roll_No']})`);
   if (studentIndex !== -1) {
@@ -198,9 +193,6 @@ function removeStudentFromChart(student) {
     updateChart();
   }
 }
-
-
-
 
 function displayError(message) {
   searchResultsContainer.innerHTML = `<p>${message}</p>`;
@@ -212,5 +204,3 @@ const clearAllButton = document.getElementById('clear-all');
 clearAllButton.addEventListener('click', () => {
   comparisonContainer.innerHTML = ''; // Clear all students from the comparison container
 });
-
-
